@@ -1,0 +1,402 @@
+/* -----------------------------------
+   BASE STYLES & GLOBAL SETTINGS
+----------------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap');
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: 'Poppins', sans-serif;
+  background: linear-gradient(to right, #1a1a1a, #000);
+  color: #fff;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* -----------------------------------
+   LOGIN & REGISTER PAGE STYLING
+----------------------------------- */
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(to right, #4b0082, #2c0040); /* purple gradient */
+  color: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
+
+.container {
+  display: flex;
+  width: 900px;
+  max-width: 95%;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+}
+
+/* Left panel */
+.left-panel {
+  flex: 1;
+  background: #2c0040;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px;
+  color: #ffb6c1;
+}
+
+.left-panel h1 {
+  font-size: 2em;
+  text-align: center;
+}
+
+/* Right panel (form) */
+.right-panel {
+  flex: 1;
+  background: #1a1a1a;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.right-panel h2 {
+  font-size: 1.8em;
+  margin-bottom: 20px;
+  text-align: center;
+  color: #fff;
+}
+
+.right-panel form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.right-panel input {
+  padding: 12px;
+  border-radius: 8px;
+  border: none;
+  outline: none;
+  font-size: 1em;
+}
+
+.right-panel input[type="text"],
+.right-panel input[type="email"],
+.right-panel input[type="password"] {
+  background: #333;
+  color: #fff;
+}
+
+.right-panel button {
+  background: linear-gradient(to right, #ff007f, #8a2be2);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 12px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.right-panel button:hover {
+  background: linear-gradient(to right, #ff4da6, #a64bf0);
+  transform: translateY(-2px);
+}
+
+.footer-text {
+  margin-top: 20px;
+  text-align: center;
+  font-size: 0.9em;
+}
+
+.footer-text a {
+  color: #ff00ff;
+  text-decoration: underline;
+}
+
+/* -----------------------------------
+   RESPONSIVE DESIGN FOR LOGIN & REGISTER
+----------------------------------- */
+@media (max-width: 768px) {
+  body {
+    height: auto; /* allow scrolling */
+    display: block; /* remove flex centering */
+    padding: 20px;
+  }
+
+  .container {
+    flex-direction: column; /* stack panels vertically */
+    width: 100%;
+    max-width: 100%;
+    box-shadow: none; /* optional: remove shadow for mobile */
+  }
+
+  .left-panel {
+    height: auto;
+    padding: 20px;
+    text-align: center;
+  }
+
+  .left-panel h1 {
+    font-size: 1.5em;
+  }
+
+  .right-panel {
+    padding: 20px;
+  }
+
+  .right-panel h2 {
+    font-size: 1.5em;
+  }
+
+  .right-panel input,
+  .right-panel button {
+    font-size: 1em;
+    padding: 10px;
+  }
+
+  .footer-text {
+    font-size: 0.85em;
+  }
+}
+
+
+/* -----------------------------------
+   DASHBOARD STYLING
+----------------------------------- */
+.dashboard-container {
+  max-width: 900px;
+  margin: auto;
+  padding: 40px;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  background: linear-gradient(to right, #4b0082, #2c0040); /* purple gradient */
+  border-radius: 12px;
+}
+
+
+.dashboard-panel h2 {
+  font-size: 2rem;
+  margin-bottom: 30px;
+  color: #fff;
+}
+
+.card {
+  background-color: #1a1a1a;
+  border-radius: 12px;
+  padding: 20px;
+  margin-bottom: 20px;
+  box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
+  color: #7a0571;
+  transition: transform 0.3s ease;
+}
+
+.card:hover {
+  transform: scale(1.02);
+}
+
+.label {
+  font-weight: 600;
+  color: #ff00ff;
+  margin-bottom: 5px;
+}
+
+.card p {
+  margin: 5px 0 15px;
+  font-size: 1rem;
+}
+
+button[type="button"] {
+  background: linear-gradient(to right, #ff007f, #8a2be2);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 30px;
+  cursor: pointer;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+button[type="button"]:hover {
+  background: linear-gradient(to right, #ff4da6, #a64bf0);
+  transform: translateY(-2px);
+}
+
+/* -----------------------------------
+   RESPONSIVE DASHBOARD CARDS
+----------------------------------- */
+@media (max-width: 1024px) {
+  .service-cards {
+    grid-template-columns: 1fr; /* stack cards in one column */
+    gap: 20px;
+  }
+
+  .card {
+    width: 100%;
+    margin: 0 auto;
+  }
+}
+
+@media (min-width: 1025px) {
+  .service-cards {
+    grid-template-columns: repeat(2, 1fr); /* 2x2 grid on desktop */
+    gap: 30px;
+  }
+}
+
+
+/* -----------------------------------
+   ADMIN DASHBOARD STYLING
+----------------------------------- */
+.admin-container {
+  background-color: #0d0d0d;
+  color: #161515;
+  min-height: 100vh;
+  padding: 40px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  
+}
+
+.admin-header h1 {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: #ff00ff;
+  margin-bottom: 10px;
+}
+
+.admin-header p {
+  font-size: 1.2rem;
+  color: #ccc;
+  margin-bottom: 40px;
+}
+
+.dashboard-actions {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.btn-admin {
+  background: linear-gradient(to right, #2c0352, #ff007f);
+  color: #fff;
+  font-weight: 600;
+  padding: 14px 24px;
+  border-radius: 30px;
+  text-decoration: none;
+  font-size: 1rem;
+  box-shadow: 0 0 10px rgba(39, 2, 39, 0.3);
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+.btn-admin:hover {
+  background: linear-gradient(to right, #a64bf0, #ff4da6);
+  transform: translateY(-2px);
+}
+
+/* -----------------------------------
+   LOG ACTIVITY STYLING
+----------------------------------- */
+.log-panel {
+  background-color: #111;
+  padding: 40px;
+  border-radius: 12px;
+  box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
+  max-width: 500px;
+  margin: auto;
+  color: #fff;
+}
+
+.log-panel h2 {
+  font-size: 2rem;
+  margin-bottom: 30px;
+  color: #fff;
+  text-align: center;
+}
+
+form label {
+  display: block;
+  margin-bottom: 8px;
+  font-weight: 600;
+  color: #ff00ff;
+}
+
+select {
+  width: 100%;
+  padding: 10px;
+  border-radius: 10px;
+  background-color: #000;
+  color: #fff;
+  border: 1px solid #555;
+  margin-bottom: 20px;
+}
+
+.timer-display {
+  font-size: 1.2em;
+  font-weight: bold;
+  margin: 10px 0 20px;
+  color: #ff00ff;
+  text-align: center;
+}
+
+button[type="submit"] {
+  background: linear-gradient(to right, #ff007f, #8a2be2);
+  border: none;
+  color: #fff;
+  font-weight: 600;
+  padding: 12px 20px;
+  border-radius: 30px;
+  cursor: pointer;
+  width: 100%;
+  transition: transform 0.3s ease, background 0.3s ease;
+}
+
+button[type="submit"]:hover {
+  background: linear-gradient(to right, #ff4da6, #a64bf0);
+  transform: translateY(-2px);
+}
+
+/* -----------------------------------
+   RESPONSIVE DESIGN
+----------------------------------- */
+@media (max-width: 768px) {
+  .container {
+    flex-direction: column;
+  }
+
+  .left-panel {
+    height: 40vh;
+  }
+
+  .form-panel,
+  .dashboard-panel,
+  .log-panel {
+    height: auto;
+    padding: 20px;
+  }
+
+  .card {
+    width: 100%;
+  }
+}
+
+#live-timer {
+  font-size: 1.2em;
+  font-weight: bold;
+  color: #ffb6c1; /* soft pink highlight */
+  margin: 10px 0;
+  text-align: center;
+}
