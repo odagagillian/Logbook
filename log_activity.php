@@ -9,30 +9,32 @@ if (!isset($_SESSION['user_id'])) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-  $_SESSION['selected_service'] = $_POST['service'];
+    $_SESSION['selected_service'] = $_POST['service'];
     $user_id = $_SESSION['user_id'];
     $service_name = $_POST['service'];
-    $time_spent = $_POST['time_spent']; // e.g., "12m 30s"
+    $time_spent = 0; // temporary placeholder until timer is implemented
 
     $stmt = $conn->prepare("INSERT INTO logs (user_id, service_name, time_spent, log_date)
-                        VALUES (?, ?, ?, NOW())");
+                            VALUES (?, ?, ?, NOW())");
 
     if ($stmt) {
 
-        $stmt->bind_param("sss", $user_id, $service_name, $time_spent);
-        if (mysqli_stmt_execute($stmt)) {
+        $stmt->bind_param("ssi", $user_id, $service_name, $time_spent);
 
+        if ($stmt->execute()) {
             echo "<script>
-                    alert('Session logged successfully! Time spent: {$time_spent}');
+                    alert('Session logged successfully!');
                     window.location.href = 'dashboard.php';
                   </script>";
             exit;
         } else {
             echo "<script>alert('Error saving log.');</script>";
         }
-        mysqli_stmt_close($stmt);
+
+        $stmt->close();
     }
-    mysqli_close($conn);
+
+    $conn->close();
 }
 ?>
 
@@ -189,8 +191,6 @@ button[type="submit"]:hover {
   </div>
 
   <input type="hidden" id="service" name="service" required>
-  <div class="timer-display" id="timer">Time Spent: 0m 0s</div>
-  <input type="hidden" id="time_spent" name="time_spent">
   <button type="submit" onclick="stopTimer()">Save</button>
 </form>
 
