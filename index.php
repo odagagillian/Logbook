@@ -162,6 +162,7 @@
   <div class="navbar">
     <div class="nav-links">
       <a href="index.php">Home</a>
+      <a href="about.php">About Us</a>
       <a href="login.php">Login</a>
       <a href="register.php">Sign Up</a>
       <a href="#contact">Contact</a>
