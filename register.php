@@ -73,7 +73,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
 </head>
-<body>
+<body class="register-page">
     <div class="container">
         <h1 class="panel-title"></h1>
         <div class= "left-panel">
@@ -89,7 +89,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <input type="password" name="password" placeholder="Password" required>
             <button type="submit">Register</button>
         </form>
-<div class= "footer-text"> Have an account? <a href="index.php">Login Here</a>
+<div class= "footer-text"> Have an account? <a href="login.php">Login Here</a>
     </div> </div>
 </body>
 </html>

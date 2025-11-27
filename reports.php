@@ -8,184 +8,343 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     exit();
 }
 
-// Search filter
+// Filters
 $search = isset($_GET['search']) ? $conn->real_escape_string($_GET['search']) : '';
+$start_date = $_GET['start_date'] ?? '';
+$end_date = $_GET['end_date'] ?? '';
+$service_filter = $_GET['service'] ?? '';
+$status_filter = $_GET['status'] ?? '';
+
 $searchCondition = $search ? "AND (u.user_name LIKE '%$search%' OR u.fullname LIKE '%$search%')" : '';
-
-// Date filter
-$start_date = isset($_GET['start_date']) ? $_GET['start_date'] : '';
-$end_date   = isset($_GET['end_date']) ? $_GET['end_date'] : '';
 $dateCondition = ($start_date && $end_date) ? "AND DATE(l.log_date) BETWEEN '$start_date' AND '$end_date'" : '';
+$serviceCondition = $service_filter ? "AND l.service_name = '$service_filter'" : '';
 
-// Fetch logs
-$sql = "SELECT u.user_name, u.fullname, 
+// Combined query for logs and appointments
+$sql = "SELECT u.user_id, u.user_name, u.fullname, 
                DATE(l.log_date) AS log_day,
                GROUP_CONCAT(DISTINCT l.service_name SEPARATOR ', ') AS services_used,
                SUM(TIME_TO_SEC(SUBSTRING_INDEX(l.time_spent, 'm', 1)) * 60 + 
                    SUBSTRING_INDEX(SUBSTRING_INDEX(l.time_spent, 'm ', -1), 's', 1)) AS total_seconds,
-               GROUP_CONCAT(TIME(l.log_date) ORDER BY l.log_date SEPARATOR ', ') AS times
-        FROM jamii_system.logs AS l
-        JOIN jamii_system.users AS u ON l.user_id = u.user_id
-        WHERE 1=1 $searchCondition $dateCondition
+               TIME(l.log_date) AS session_time,
+               (SELECT GROUP_CONCAT(CONCAT(a.service_name, ' with ', s.staff_name) SEPARATOR ' | ')
+                FROM appointments a 
+                JOIN staff s ON a.staff_id = s.staff_id 
+                WHERE a.user_id = u.user_id) AS appointments
+        FROM logs AS l
+        JOIN users AS u ON l.user_id = u.user_id
+        WHERE 1=1 $searchCondition $dateCondition $serviceCondition
         GROUP BY u.user_id, log_day
-        ORDER BY log_day DESC";
+        ORDER BY log_day DESC, session_time DESC";
 
 $result = $conn->query($sql);
 
-// Count unique users
-$userCountSql = "SELECT COUNT(DISTINCT user_id) AS total_users FROM jamii_system.logs";
-$userCountResult = $conn->query($userCountSql);
-$totalUsers = ($userCountResult && $userCountResult->num_rows > 0)
-              ? $userCountResult->fetch_assoc()['total_users']
-              : 0;
-?>
+// Summary cards
+$userCount = $conn->query("SELECT COUNT(DISTINCT user_id) AS total FROM logs")->fetch_assoc()['total'];
+$apptCount = $conn->query("SELECT COUNT(*) AS total FROM appointments")->fetch_assoc()['total'];
+$topServiceResult = $conn->query("SELECT service_name, COUNT(*) AS count FROM logs GROUP BY service_name ORDER BY count DESC LIMIT 1")->fetch_assoc();
+$topService = $topServiceResult['service_name'] ?? 'N/A';
+$totalTimeResult = $conn->query("SELECT SUM(TIME_TO_SEC(SUBSTRING_INDEX(time_spent, 'm', 1)) * 60) AS total FROM logs")->fetch_assoc();
+$totalMinutes = floor(($totalTimeResult['total'] ?? 0) / 60);
 
+// Get all services for filter
+$servicesQuery = $conn->query("SELECT DISTINCT service_name FROM logs ORDER BY service_name");
+?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>Activity Records</title>
-  <link rel="stylesheet" href="style.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Reports - Jamii Resource Centre</title>
   <style>
-    body {
-      margin: 0;
-      padding: 0;
-      background-color: #000;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { 
+      font-family: 'Inter', 'Segoe UI', sans-serif; 
+      background: linear-gradient(135deg, #0f0c1d 0%, #1a1530 100%);
       color: #fff;
-      font-family: 'Poppins', sans-serif;
+      min-height: 100vh;
+      padding: 20px;
     }
-
-    .container {
-      max-width: 1200px;
-      margin: auto;
-      padding: 30px;
-    }
-
-    header {
-      text-align: center;
+    .container { max-width: 1400px; margin: auto; }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
       margin-bottom: 30px;
+      padding: 20px 0;
     }
-
-    header h1 {
-      font-size: 2.5rem;
+    .header h1 { 
+      font-size: 2rem; 
+      color: #a259ff; 
       font-weight: 700;
-      color: #ff00ff;
-      margin: 0;
     }
-
-    .controls {
-      display: flex;
-      flex-direction: column;
-      align-items: flex-start;
-      gap: 15px;
-      margin-bottom: 20px;
-    }
-
-    .controls form {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-    }
-
-    .controls input,
-    .controls button,
-    .controls a {
-      padding: 10px 15px;
-      border-radius: 6px;
-      border: none;
-      font-size: 1rem;
-    }
-
-    .controls button,
-    .controls a {
-      background: linear-gradient(to right, #8a2be2, #ff007f);
+    .header .actions a {
+      background: linear-gradient(135deg, #7c3aed 0%, #a259ff 100%);
       color: #fff;
+      padding: 12px 24px;
+      border-radius: 10px;
       text-decoration: none;
       font-weight: 600;
-      cursor: pointer;
+      transition: all 0.3s ease;
+      display: inline-block;
     }
-
-    .controls a.clear {
-      background: #555;
+    .header .actions a:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(162, 89, 255, 0.4);
     }
-
-    .table-wrapper {
-      overflow-x: auto;
+    
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .summary-card {
+      background: rgba(26, 21, 48, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 16px;
+      border: 1px solid rgba(162, 89, 255, 0.2);
+      transition: all 0.3s ease;
+    }
+    .summary-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 12px 40px rgba(162, 89, 255, 0.2);
+    }
+    .summary-card h3 {
+      font-size: 0.9rem;
+      color: #c8c8d8;
+      font-weight: 500;
+      margin-bottom: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .summary-card p {
+      font-size: 2rem;
+      font-weight: 700;
+      color: #a259ff;
+    }
+    
+    .filters-section {
+      background: rgba(26, 21, 48, 0.8);
+      backdrop-filter: blur(10px);
+      padding: 25px;
+      border-radius: 16px;
+      border: 1px solid rgba(162, 89, 255, 0.2);
+      margin-bottom: 30px;
+    }
+    .filters-section h3 {
+      color: #a259ff;
+      margin-bottom: 15px;
+      font-size: 1.1rem;
+    }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      align-items: center;
+    }
+    .filters input, .filters select, .filters button {
+      padding: 12px 15px;
       border-radius: 10px;
-      box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
+      border: 2px solid rgba(162, 89, 255, 0.3);
+      background: rgba(162, 89, 255, 0.1);
+      color: #fff;
+      font-size: 0.9rem;
+      transition: all 0.3s ease;
     }
-
+    .filters input::placeholder {
+      color: #999;
+    }
+    .filters input:focus, .filters select:focus {
+      outline: none;
+      border-color: #a259ff;
+      box-shadow: 0 0 0 3px rgba(162, 89, 255, 0.2);
+    }
+    .filters button {
+      background: linear-gradient(135deg, #7c3aed 0%, #a259ff 100%);
+      border: none;
+      color: #fff;
+      font-weight: 600;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .filters button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(162, 89, 255, 0.4);
+    }
+    .filters .clear-btn {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .filters .export-btn {
+      background: linear-gradient(135deg, #2ecc71 0%, #27ae60 100%);
+    }
+    
+    .table-container {
+      background: rgba(26, 21, 48, 0.8);
+      backdrop-filter: blur(10px);
+      border-radius: 16px;
+      border: 1px solid rgba(162, 89, 255, 0.2);
+      overflow: hidden;
+    }
     table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 900px;
     }
-
-    table th, table td {
-      border: 1px solid #444;
-      padding: 12px;
+    thead {
+      background: rgba(162, 89, 255, 0.2);
+    }
+    th {
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+      color: #a259ff;
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      border-bottom: 2px solid rgba(162, 89, 255, 0.3);
+    }
+    td {
+      padding: 15px;
+      border-bottom: 1px solid rgba(162, 89, 255, 0.1);
+      color: #c8c8d8;
+      font-size: 0.9rem;
+    }
+    tr:hover {
+      background: rgba(162, 89, 255, 0.05);
+    }
+    .badge {
+      display: inline-block;
+      background: rgba(162, 89, 255, 0.2);
+      color: #a259ff;
+      padding: 5px 12px;
+      border-radius: 20px;
+      margin: 3px;
+      font-size: 0.8rem;
+      font-weight: 500;
+      border: 1px solid rgba(162, 89, 255, 0.3);
+    }
+    .status-open {
+      background: rgba(46, 204, 113, 0.2);
+      color: #2ecc71;
+      border: 1px solid rgba(46, 204, 113, 0.3);
+    }
+    .actions-cell {
+      display: flex;
+      gap: 10px;
+    }
+    .action-btn {
+      padding: 6px 12px;
+      border-radius: 6px;
+      text-decoration: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      display: inline-block;
+    }
+    .edit-btn {
+      background: rgba(52, 152, 219, 0.2);
+      color: #3498db;
+      border: 1px solid rgba(52, 152, 219, 0.3);
+    }
+    .edit-btn:hover {
+      background: rgba(52, 152, 219, 0.3);
+      transform: translateY(-2px);
+    }
+    .delete-btn {
+      background: rgba(231, 76, 60, 0.2);
+      color: #e74c3c;
+      border: 1px solid rgba(231, 76, 60, 0.3);
+    }
+    .delete-btn:hover {
+      background: rgba(231, 76, 60, 0.3);
+      transform: translateY(-2px);
+    }
+    .no-data {
       text-align: center;
+      padding: 40px;
+      color: #999;
+      font-size: 1rem;
     }
-
-    table th {
-      background: #8a2be2;
-      color: #fff;
-    }
-
-    table tr:nth-child(even) {
-      background: #1a1a1a;
-    }
-
-    table tr:nth-child(odd) {
-      background: #2c2c2c;
-    }
-
     footer {
       margin-top: 40px;
       text-align: center;
-      font-size: 1.2rem;
-      color: #ffb6c1;
+      color: #999;
+      font-size: 0.9rem;
     }
   </style>
 </head>
 <body>
 <div class="container">
-  <header>
-    <h1>Activity Records</h1>
-  </header>
+  <div class="header">
+    <h1>📊 Admin Reports Dashboard</h1>
+    <div class="actions">
+      <a href="admin_dashboard.php">← Back to Dashboard</a>
+    </div>
+  </div>
 
-  <div class="controls">
-    <form method="GET">
-      <input type="text" name="search" placeholder="Search by username or full name" value="<?= htmlspecialchars($search) ?>" />
+  <div class="summary">
+    <div class="summary-card">
+      <h3>Total Users</h3>
+      <p><?= $userCount ?></p>
+    </div>
+    <div class="summary-card">
+      <h3>Total Appointments</h3>
+      <p><?= $apptCount ?></p>
+    </div>
+    <div class="summary-card">
+      <h3>Most Used Service</h3>
+      <p style="font-size: 1.2rem;"><?= htmlspecialchars($topService) ?></p>
+    </div>
+    <div class="summary-card">
+      <h3>Total Time Logged</h3>
+      <p><?= number_format($totalMinutes) ?> <span style="font-size: 1rem;">mins</span></p>
+    </div>
+  </div>
+
+  <div class="filters-section">
+    <h3>🔍 Filter Reports</h3>
+    <form method="GET" class="filters">
+      <input type="text" name="search" placeholder="Search by name or username..." value="<?= htmlspecialchars($search) ?>" style="min-width: 250px;" />
       <input type="date" name="start_date" value="<?= htmlspecialchars($start_date) ?>" />
+      <span style="color: #999;">to</span>
       <input type="date" name="end_date" value="<?= htmlspecialchars($end_date) ?>" />
-      <button type="submit">Filter</button>
-      <a href="reports.php" class="clear">Clear Filters</a>
+      <select name="service">
+        <option value="">All Services</option>
+        <?php while($service = $servicesQuery->fetch_assoc()): ?>
+          <option value="<?= htmlspecialchars($service['service_name']) ?>" <?= $service_filter === $service['service_name'] ? 'selected' : '' ?>>
+            <?= htmlspecialchars($service['service_name']) ?>
+          </option>
+        <?php endwhile; ?>
+      </select>
+      <button type="submit">Apply Filters</button>
+      <a href="reports.php" class="clear-btn" style="padding: 12px 15px; border-radius: 10px; text-decoration: none; color: #fff; display: inline-block;">Clear</a>
     </form>
+  </div>
 
-    <form method="POST" action="export.php">
+  <div style="margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center;">
+    <h3 style="color: #a259ff;">User Activity & Appointments</h3>
+    <form method="POST" action="export.php" style="display: inline;">
       <input type="hidden" name="search" value="<?= htmlspecialchars($search) ?>">
       <input type="hidden" name="start_date" value="<?= htmlspecialchars($start_date) ?>">
       <input type="hidden" name="end_date" value="<?= htmlspecialchars($end_date) ?>">
-      <button type="submit">Export Report</button>
+      <button type="submit" class="export-btn" style="padding: 10px 20px; border-radius: 10px; border: none; color: #fff; font-weight: 600; cursor: pointer;">📥 Export Report</button>
     </form>
-
-    <a href="admin_dashboard.php" class="btn">Back to Dashboard</a>
   </div>
 
-  <div class="table-wrapper">
+  <div class="table-container">
     <table>
       <thead>
         <tr>
           <th>Full Name</th>
           <th>Username</th>
+          <th>Date</th>
+          <th>Session Time</th>
           <th>Services Used</th>
           <th>Total Time Spent</th>
-          <th>Log Date</th>
-          <th>Session Times</th>
-          <?php if ($_SESSION['role'] === 'admin'): ?>
-            <th>Actions</th>
-          <?php endif; ?>
+          <th>Booked Appointments</th>
+          <th>Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -195,26 +354,37 @@ $totalUsers = ($userCountResult && $userCountResult->num_rows > 0)
                 $minutes = floor($row['total_seconds'] / 60);
                 $seconds = $row['total_seconds'] % 60;
                 $formatted_time = "{$minutes}m {$seconds}s";
-
+                $services = explode(', ', $row['services_used']);
+                
                 echo "<tr>
-                  <td>{$row['fullname']}</td>
+                  <td><strong style='color: #fff;'>{$row['fullname']}</strong></td>
                   <td>{$row['user_name']}</td>
-                  <td>{$row['services_used']}</td>
-                  <td>{$formatted_time}</td>
                   <td>{$row['log_day']}</td>
-                  <td>{$row['times']}</td>";
-
-                if ($_SESSION['role'] === 'admin') {
-                    echo "<td>
-                      <a href='edit_report.php?user={$row['user_name']}&date={$row['log_day']}' class='btn'>Edit</a>
-                      <a href='delete_report.php?user={$row['user_name']}&date={$row['log_day']}' class='btn' onclick=\"return confirm('Are you sure you want to delete this report?');\">Delete</a>
-                    </td>";
+                  <td>{$row['session_time']}</td>
+                  <td>";
+                foreach ($services as $s) {
+                    echo "<span class='badge'>" . htmlspecialchars($s) . "</span>";
                 }
-
-                echo "</tr>";
+                echo "</td>
+                  <td><strong style='color: #a259ff;'>$formatted_time</strong></td>
+                  <td>";
+                if ($row['appointments']) {
+                    $appointments = explode(' | ', $row['appointments']);
+                    foreach ($appointments as $appt) {
+                        echo "<span class='badge status-open'>" . htmlspecialchars($appt) . "</span>";
+                    }
+                } else {
+                    echo "<span style='color: #666;'>No appointments</span>";
+                }
+                echo "</td>
+                  <td class='actions-cell'>
+                    <a href='edit_report.php?user={$row['user_name']}&date={$row['log_day']}' class='action-btn edit-btn'>Edit</a>
+                    <a href='delete_report.php?user={$row['user_name']}&date={$row['log_day']}' class='action-btn delete-btn' onclick=\"return confirm('Delete this report?');\">Delete</a>
+                  </td>
+                </tr>";
             }
         } else {
-            echo "<tr><td colspan='7'>NO LOG RECORDS FOUND!</td></tr>";
+            echo "<tr><td colspan='8' class='no-data'>No records found. Try adjusting your filters.</td></tr>";
         }
         ?>
       </tbody>
@@ -222,7 +392,7 @@ $totalUsers = ($userCountResult && $userCountResult->num_rows > 0)
   </div>
 
   <footer>
-    <h3>Total Users Logged: <?= $totalUsers ?></h3>
+    Jamii Resource Centre Admin Panel © <?= date('Y') ?>
   </footer>
 </div>
 </body>

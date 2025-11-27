@@ -16,24 +16,27 @@ $end_date    = isset($_POST['end_date']) ? $_POST['end_date'] : '';
 $searchCondition = $search ? "AND (u.user_name LIKE '%$search%' OR u.fullname LIKE '%$search%')" : '';
 $dateCondition   = ($start_date && $end_date) ? "AND DATE(l.log_date) BETWEEN '$start_date' AND '$end_date'" : '';
 
-// Set headers for Excel export
-header("Content-Type: application/vnd.ms-excel");
-header("Content-Disposition: attachment; filename=Jamii_Reports.xls");
+// Set headers for CSV export (cleaner than .xls)
+header("Content-Type: text/csv");
+header("Content-Disposition: attachment; filename=Jamii_Reports.csv");
 header("Pragma: no-cache");
 header("Expires: 0");
 
 // Title and timestamp
 $date = date("Y-m-d H:i:s");
-echo "Jamii Resource Centre - System Usage Report\t\t\t\n";
-echo "Generated on: $date\t\t\t\n\n";
+echo "Jamii Resource Centre - System Usage Report\n";
+echo "Generated on: $date\n\n";
 
 // Column headers
-echo "Fullname\tUser_name\tService_name\tTime Spent\tLog Date\n";
+echo "Fullname,Username,Service Used,Time Spent,Log Date,Appointment Date,Staff,Staff Phone,Room\n";
 
-// Fetch data from database with filters
-$sql = "SELECT u.fullname, u.user_name, l.service_name, l.time_spent, l.log_date
-        FROM jamii_system.logs AS l
-        JOIN jamii_system.users AS u ON l.user_id = u.user_id
+// Fetch data with joins
+$sql = "SELECT u.fullname, u.user_name, l.service_name, l.time_spent, l.log_date,
+               a.appointment_date, s.staff_name, s.staff_phone, s.room_number
+        FROM logs AS l
+        JOIN users AS u ON l.user_id = u.user_id
+        LEFT JOIN appointments a ON l.user_id = a.user_id
+        LEFT JOIN staff s ON a.staff_id = s.staff_id
         WHERE 1=1 $searchCondition $dateCondition
         ORDER BY l.log_date DESC";
 
@@ -41,7 +44,10 @@ $result = $conn->query($sql);
 
 if ($result && $result->num_rows > 0) {
     while ($row = $result->fetch_assoc()) {
-        echo "{$row['fullname']}\t{$row['user_name']}\t{$row['service_name']}\t{$row['time_spent']}\t{$row['log_date']}\n";
+        // Escape commas by wrapping values in quotes
+        echo "\"{$row['fullname']}\",\"{$row['user_name']}\",\"{$row['service_name']}\",\"{$row['time_spent']}\",\"{$row['log_date']}\",";
+        echo "\"".($row['appointment_date'] ? date("F j, Y, g:i a", strtotime($row['appointment_date'])) : "")."\",";
+        echo "\"{$row['staff_name']}\",\"{$row['staff_phone']}\",\"{$row['room_number']}\"\n";
     }
 } else {
     echo "No records found.\n";
@@ -49,13 +55,13 @@ if ($result && $result->num_rows > 0) {
 
 // Count unique users (respecting filters)
 $userCountSql = "SELECT COUNT(DISTINCT u.user_id) AS total_users
-                 FROM jamii_system.logs AS l
-                 JOIN jamii_system.users AS u ON l.user_id = u.user_id
+                 FROM logs AS l
+                 JOIN users AS u ON l.user_id = u.user_id
                  WHERE 1=1 $searchCondition $dateCondition";
 $userCountResult = $conn->query($userCountSql);
 $totalUsers = ($userCountResult && $userCountResult->num_rows > 0)
               ? $userCountResult->fetch_assoc()['total_users']
               : 0;
 
-echo "\nTotal Users Logged:\t$totalUsers\n";
+echo "\nTotal Users Logged:,$totalUsers\n";
 ?>

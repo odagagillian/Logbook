@@ -8,7 +8,7 @@ if (isset($_SESSION['role'])) {
         header("Location: admin_dashboard.php");
         exit();
     } else {
-        header("Location: log_activity.php");
+        header("Location: dashboard.php");
         exit();
     }
 }
@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($user['role'] === 'admin') {
                 header("Location: admin_dashboard.php");
             } else {
-                header("Location: log_activity.php");
+                header("Location: dashboard.php");
             }
             exit();
         } else {
@@ -68,7 +68,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
 </head>
-<body>
+<body class="login-page">
   <div class="container">
     <!-- Left abstract panel -->
     <div class="left-panel">

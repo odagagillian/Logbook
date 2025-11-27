@@ -1,9 +1,9 @@
 <?php
 // Database connection settings
-$servername = "localhost"; // Localhost server
-$username   = "root";      // Default username for XAMPP
-$password   = "";          // Leave empty unless you set a password in phpMyAdmin
-$dbname     = "jamii_system"; // Your database name
+$servername = "sql100.infinityfree.com"; // Localhost server
+$username   = "if0_40524084";      // Default username for XAMPP
+$password   = "momoayase";          // Leave empty unless you set a password in phpMyAdmin
+$dbname     = "if0_40524084_jamii"; // Your database name
 
 // Create connection
 $conn = new mysqli($servername, $username, $password, $dbname);

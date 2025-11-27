@@ -9,11 +9,13 @@ if (!isset($_SESSION['user_id'])) {
 
 $user_id = $_SESSION['user_id'];
 
-// Fetch all appointments for this user
-$query = "SELECT service_name, appointment_date, created_at 
-          FROM appointments 
-          WHERE user_id = ? 
-          ORDER BY appointment_date DESC";
+// Fetch all appointments for this user, including staff info
+$query = "SELECT a.service_name, a.appointment_date, a.created_at,
+                 s.staff_name, s.staff_phone, s.room_number
+          FROM appointments a
+          JOIN staff s ON a.staff_id = s.staff_id
+          WHERE a.user_id = ?
+          ORDER BY a.appointment_date DESC";
 $stmt = mysqli_prepare($conn, $query);
 mysqli_stmt_bind_param($stmt, 'i', $user_id);
 mysqli_stmt_execute($stmt);
@@ -49,12 +51,18 @@ $result = mysqli_stmt_get_result($stmt);
           <th>Service</th>
           <th>Appointment Date</th>
           <th>Booked On</th>
+          <th>Staff</th>
+          <th>Phone</th>
+          <th>Room</th>
         </tr>
         <?php while ($row = mysqli_fetch_assoc($result)): ?>
           <tr>
             <td><?= htmlspecialchars($row['service_name']) ?></td>
             <td><?= date("F j, Y, g:i a", strtotime($row['appointment_date'])) ?></td>
             <td><?= date("F j, Y, g:i a", strtotime($row['created_at'])) ?></td>
+            <td><?= htmlspecialchars($row['staff_name']) ?></td>
+            <td><?= htmlspecialchars($row['staff_phone']) ?></td>
+            <td><?= htmlspecialchars($row['room_number']) ?></td>
           </tr>
         <?php endwhile; ?>
       </table>

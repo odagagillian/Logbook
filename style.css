@@ -21,7 +21,7 @@ button {
 /* -----------------------------------
    LOGIN & REGISTER PAGE STYLING
 ----------------------------------- */
-body {
+.login-page, .register-page {
   margin: 0;
   font-family: 'Segoe UI', sans-serif;
   background: linear-gradient(to right, #4b0082, #2c0040); /* purple gradient */
@@ -126,7 +126,7 @@ body {
    RESPONSIVE DESIGN FOR LOGIN & REGISTER
 ----------------------------------- */
 @media (max-width: 768px) {
-  body {
+  .login-page, .register-page {
     height: auto; /* allow scrolling */
     display: block; /* remove flex centering */
     padding: 20px;
@@ -168,97 +168,10 @@ body {
   }
 }
 
-
-/* -----------------------------------
-   DASHBOARD STYLING
------------------------------------ */
-.dashboard-container {
-  max-width: 900px;
-  margin: auto;
-  padding: 40px;
-  min-height: 100vh;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  background: linear-gradient(to right, #4b0082, #2c0040); /* purple gradient */
-  border-radius: 12px;
-}
-
-
-.dashboard-panel h2 {
-  font-size: 2rem;
-  margin-bottom: 30px;
-  color: #fff;
-}
-
-.card {
-  background-color: #1a1a1a;
-  border-radius: 12px;
-  padding: 20px;
-  margin-bottom: 20px;
-  box-shadow: 0 0 10px rgba(255, 0, 255, 0.2);
-  color: #7a0571;
-  transition: transform 0.3s ease;
-}
-
-.card:hover {
-  transform: scale(1.02);
-}
-
-.label {
-  font-weight: 600;
-  color: #ff00ff;
-  margin-bottom: 5px;
-}
-
-.card p {
-  margin: 5px 0 15px;
-  font-size: 1rem;
-}
-
-button[type="button"] {
-  background: linear-gradient(to right, #ff007f, #8a2be2);
-  border: none;
-  color: #fff;
-  font-weight: 600;
-  padding: 12px 20px;
-  border-radius: 30px;
-  cursor: pointer;
-  transition: transform 0.3s ease, background 0.3s ease;
-}
-
-button[type="button"]:hover {
-  background: linear-gradient(to right, #ff4da6, #a64bf0);
-  transform: translateY(-2px);
-}
-
-/* -----------------------------------
-   RESPONSIVE DASHBOARD CARDS
------------------------------------ */
-@media (max-width: 1024px) {
-  .service-cards {
-    grid-template-columns: 1fr; /* stack cards in one column */
-    gap: 20px;
-  }
-
-  .card {
-    width: 100%;
-    margin: 0 auto;
-  }
-}
-
-@media (min-width: 1025px) {
-  .service-cards {
-    grid-template-columns: repeat(2, 1fr); /* 2x2 grid on desktop */
-    gap: 30px;
-  }
-}
-
-
 /* -----------------------------------
    ADMIN DASHBOARD STYLING
 ----------------------------------- */
-.admin-container {
+.admin-dashboard-page {
   background-color: #0d0d0d;
   color: #161515;
   min-height: 100vh;
@@ -304,68 +217,6 @@ button[type="button"]:hover {
 
 .btn-admin:hover {
   background: linear-gradient(to right, #a64bf0, #ff4da6);
-  transform: translateY(-2px);
-}
-
-/* -----------------------------------
-   LOG ACTIVITY STYLING
------------------------------------ */
-.log-panel {
-  background-color: #111;
-  padding: 40px;
-  border-radius: 12px;
-  box-shadow: 0 0 20px rgba(255, 0, 255, 0.2);
-  max-width: 500px;
-  margin: auto;
-  color: #fff;
-}
-
-.log-panel h2 {
-  font-size: 2rem;
-  margin-bottom: 30px;
-  color: #fff;
-  text-align: center;
-}
-
-form label {
-  display: block;
-  margin-bottom: 8px;
-  font-weight: 600;
-  color: #ff00ff;
-}
-
-select {
-  width: 100%;
-  padding: 10px;
-  border-radius: 10px;
-  background-color: #000;
-  color: #fff;
-  border: 1px solid #555;
-  margin-bottom: 20px;
-}
-
-.timer-display {
-  font-size: 1.2em;
-  font-weight: bold;
-  margin: 10px 0 20px;
-  color: #ff00ff;
-  text-align: center;
-}
-
-button[type="submit"] {
-  background: linear-gradient(to right, #ff007f, #8a2be2);
-  border: none;
-  color: #fff;
-  font-weight: 600;
-  padding: 12px 20px;
-  border-radius: 30px;
-  cursor: pointer;
-  width: 100%;
-  transition: transform 0.3s ease, background 0.3s ease;
-}
-
-button[type="submit"]:hover {
-  background: linear-gradient(to right, #ff4da6, #a64bf0);
   transform: translateY(-2px);
 }
 

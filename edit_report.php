@@ -7,38 +7,43 @@ if (!isset($_SESSION['role']) || $_SESSION['role'] !== 'admin') {
     exit();
 }
 
-if (isset($_GET['user']) && isset($_GET['date'])) {
-    $user = $conn->real_escape_string($_GET['user']);
-    $date = $conn->real_escape_string($_GET['date']);
+if (isset($_GET['log_id'])) {
+    $log_id = intval($_GET['log_id']); // safer than user/date combo
 
-    $userQuery = "SELECT user_id FROM jamii_system.users WHERE user_name = '$user'";
-    $userResult = $conn->query($userQuery);
+    // Fetch log entry securely
+    $logQuery = "SELECT l.service_name, l.time_spent, u.user_name, DATE(l.log_date) AS log_day
+                 FROM logs l
+                 JOIN users u ON l.user_id = u.user_id
+                 WHERE l.log_id = ?";
+    $stmt = $conn->prepare($logQuery);
+    $stmt->bind_param("i", $log_id);
+    $stmt->execute();
+    $logResult = $stmt->get_result();
+    $log = $logResult->fetch_assoc();
+    $stmt->close();
 
-    if ($userResult && $userResult->num_rows > 0) {
-        $userId = $userResult->fetch_assoc()['user_id'];
-
-        if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-            $services = $conn->real_escape_string($_POST['services']);
-            $time = $conn->real_escape_string($_POST['time']);
-
-            $updateQuery = "UPDATE jamii_system.logs 
-                            SET service_name = '$services', time_spent = '$time'
-                            WHERE user_id = '$userId' AND DATE(log_date) = '$date'";
-            if ($conn->query($updateQuery)) {
-                header("Location: reports.php?msg=updated");
-                exit();
-            } else {
-                echo "Update failed: " . $conn->error;
-            }
-        }
-
-        $logQuery = "SELECT service_name, time_spent FROM jamii_system.logs 
-                     WHERE user_id = '$userId' AND DATE(log_date) = '$date' LIMIT 1";
-        $logResult = $conn->query($logQuery);
-        $log = $logResult->fetch_assoc();
-    } else {
-        echo "User not found.";
+    if (!$log) {
+        echo "Log not found.";
         exit();
+    }
+
+    // Handle update
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $services = $_POST['services'];
+        $time = $_POST['time'];
+
+        $updateQuery = "UPDATE logs SET service_name = ?, time_spent = ? WHERE log_id = ?";
+        $stmt = $conn->prepare($updateQuery);
+        $stmt->bind_param("ssi", $services, $time, $log_id);
+
+        if ($stmt->execute()) {
+            header("Location: reports.php?msg=updated");
+            exit();
+        } else {
+            header("Location: reports.php?msg=error");
+            exit();
+        }
+        $stmt->close();
     }
 } else {
     echo "Invalid request.";
@@ -52,7 +57,7 @@ if (isset($_GET['user']) && isset($_GET['date'])) {
     <title>Edit Report</title>
 </head>
 <body>
-    <h2>Edit Report for <?= htmlspecialchars($user) ?> on <?= htmlspecialchars($date) ?></h2>
+    <h2>Edit Report for <?= htmlspecialchars($log['user_name']) ?> on <?= htmlspecialchars($log['log_day']) ?></h2>
     <form method="POST">
         <label>Services Used:</label><br>
         <input type="text" name="services" value="<?= htmlspecialchars($log['service_name']) ?>" required><br><br>
